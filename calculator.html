@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Vinyl Quote Calculator</title>
+  <style>
+    body {
+      background-color: #000;
+      color: #d4af37;
+      font-family: Arial, sans-serif;
+      text-align: center;
+      padding: 20px;
+    }
+
+    h2 {
+      color: #f5e6b3;
+    }
+
+    select, input {
+      padding: 8px;
+      margin: 10px;
+      border: 1px solid #d4af37;
+      background-color: #111;
+      color: #d4af37;
+      border-radius: 5px;
+    }
+
+    button {
+      padding: 10px 20px;
+      margin-top: 15px;
+      background: #d4af37;
+      color: #000;
+      border: none;
+      border-radius: 8px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    button:hover {
+      background: #f5e6b3;
+      box-shadow: 0 0 10px #d4af37;
+    }
+
+    #result {
+      margin-top: 20px;
+      padding: 15px;
+      border: 2px solid #d4af37;
+      display: inline-block;
+      font-size: 18px;
+      font-weight: bold;
+      border-radius: 10px;
+      background-color: #111;
+    }
+
+    label {
+      display: inline-block;
+      min-width: 70px;
+    }
+  </style>
+</head>
+<body>
+  <h2>Vinyl Quote Calculator</h2>
+
+  <!-- Unit Toggle -->
+  <div>
+    <label>Units:</label>
+    <select id="unitSelect" onchange="updateLabels()">
+      <option value="meters" selected>Meters</option>
+      <option value="feet">Feet</option>
+    </select>
+  </div>
+
+  <!-- Dropdowns -->
+  <div>
+    <label>Job Type:</label>
+    <select id="jobType" onchange="populateSubcategories()">
+      <option value="">--Select--</option>
+      <option value="Shopfront">Shopfront Windows</option>
+      <option value="Vehicle">Vehicle Wrapping</option>
+      <option value="Signs">Road Signs</option>
+    </select>
+  </div>
+
+  <div>
+    <label>Sub-Category:</label>
+    <select id="subCategory" onchange="populateVehicles()">
+      <option value="">--Select--</option>
+    </select>
+  </div>
+
+  <div id="vehicleContainer" style="display:none;">
+    <label>Vehicle Type:</label>
+    <select id="vehicleType">
+      <option value="">--Select--</option>
+    </select>
+  </div>
+
+  <!-- Size -->
+  <div>
+    <label id="widthLabel">Width (m):</label>
+    <input type="number" id="width" min="0" step="0.1">
+    <label id="heightLabel">Height (m):</label>
+    <input type="number" id="height" min="0" step="0.1">
+  </div>
+
+  <button onclick="calculateQuote()">Get Quote</button>
+
+  <div id="result">Estimated Quote: --</div>
+
+  <script>
+    // Dummy price data (edit these values later!)
+    const pricePerM2 = {
+      "Shopfront": {
+        "Full Coverage": 300,
+        "Partial Coverage": 200,
+        "Cut-out Vinyl": 150
+      },
+      "Vehicle": {
+        "Full Wrap": { "SUV": 400, "Sedan": 350, "Truck": 500 },
+        "Half Wrap": { "SUV": 250, "Sedan": 200, "Truck": 300 },
+        "Quarter Wrap": { "SUV": 150, "Sedan": 120, "Truck": 180 }
+      },
+      "Signs": {
+        "Small": 100,
+        "Medium": 200,
+        "Large": 400
+      }
+    };
+
+    function updateLabels() {
+      const unit = document.getElementById("unitSelect").value;
+      document.getElementById("widthLabel").innerText = `Width (${unit === 'meters' ? 'm' : 'ft'}):`;
+      document.getElementById("heightLabel").innerText = `Height (${unit === 'meters' ? 'm' : 'ft'}):`;
+    }
+
+    function populateSubcategories() {
+      const jobType = document.getElementById("jobType").value;
+      const subCatSelect = document.getElementById("subCategory");
+      subCatSelect.innerHTML = "<option value=''>--Select--</option>";
+      document.getElementById("vehicleContainer").style.display = "none";
+
+      if (jobType === "Shopfront") {
+        Object.keys(pricePerM2.Shopfront).forEach(sub => {
+          subCatSelect.innerHTML += `<option value="${sub}">${sub}</option>`;
+        });
+      } else if (jobType === "Vehicle") {
+        Object.keys(pricePerM2.Vehicle).forEach(sub => {
+          subCatSelect.innerHTML += `<option value="${sub}">${sub}</option>`;
+        });
+      } else if (jobType === "Signs") {
+        Object.keys(pricePerM2.Signs).forEach(sub => {
+          subCatSelect.innerHTML += `<option value="${sub}">${sub}</option>`;
+        });
+      }
+    }
+
+    function populateVehicles() {
+      const jobType = document.getElementById("jobType").value;
+      const subCategory = document.getElementById("subCategory").value;
+      const vehicleSelect = document.getElementById("vehicleType");
+      vehicleSelect.innerHTML = "<option value=''>--Select--</option>";
+
+      if (jobType === "Vehicle") {
+        document.getElementById("vehicleContainer").style.display = "block";
+        Object.keys(pricePerM2.Vehicle[subCategory]).forEach(vehicle => {
+          vehicleSelect.innerHTML += `<option value="${vehicle}">${vehicle}</option>`;
+        });
+      } else {
+        document.getElementById("vehicleContainer").style.display = "none";
+      }
+    }
+
+    function calculateQuote() {
+      const jobType = document.getElementById("jobType").value;
+      const subCategory = document.getElementById("subCategory").value;
+      const vehicleType = document.getElementById("vehicleType").value;
+      let width = parseFloat(document.getElementById("width").value) || 0;
+      let height = parseFloat(document.getElementById("height").value) || 0;
+      const unit = document.getElementById("unitSelect").value;
+
+      // Convert feet to meters if needed
+      if (unit === "feet") {
+        width = width * 0.3048;
+        height = height * 0.3048;
+      }
+
+      const area = width * height;
+      let price = 0;
+
+      if (jobType && subCategory) {
+        if (jobType === "Vehicle" && vehicleType) {
+          price = area * pricePerM2[jobType][subCategory][vehicleType];
+        } else if (jobType === "Vehicle" && !vehicleType) {
+          document.getElementById("result").innerHTML = "Please select a vehicle type.";
+          return;
+        } else {
+          price = area * pricePerM2[jobType][subCategory];
+        }
+      }
+
+      document.getElementById("result").innerHTML = "Estimated Quote: R" + price.toFixed(2);
+    }
+  </script>
+</body>
+</html>
